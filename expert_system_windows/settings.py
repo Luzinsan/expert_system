@@ -1,8 +1,8 @@
 from remapping import *
 
 count_alter = 0
-WIDTH = 1920
-HEIGHT = 1080
+WIDTH = 1550
+HEIGHT = 820
 
 with dpg.theme() as global_theme:
     with dpg.theme_component(dpg.mvAll):
