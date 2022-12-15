@@ -38,18 +38,42 @@ dpg.set_primary_window("Main", True)
 
 
 # region ####################################################--CONSISTENCY--##################################################
-def check_consistency(table_expert: np.ndarray[[]]):
+def get_eigenvector(table_expert: np.ndarray):
     # Вычисление собственного вектора (придлиженный метод - геометрическое среднее)
-    eigenvector = np.empty(table_expert.shape[0])
-    table_expert[0] = np.arange(table_expert.shape[1])  # test
-    print(table_expert[0])  # test
-    for row in range(table_expert.shape[0]):
-        print(table_expert[row])
-        print(np.prod(table_expert[row]))
-        eigenvector[row] = np.sqrt(np.prod(table_expert[row]))
-        print(eigenvector)
+    norm_table = np.array([[0.5 if item == 0 else 2
+                            for item in table_expert[row]]
+                           for row in range(table_expert.shape[0])], dtype=np.float64)
+    norm_table = np.array([[1.0, 0.33, 0.33, 0.2], [3.00, 1.0, 3.00, 0.33], [3.0, 0.33, 1.0, 0.33], [5.0, 3.0, 3.0, 1.0]])
+    eigenvector = np.array([pow(np.prod(norm_table[row]), 1/norm_table.shape[0])
+                            for row in range(norm_table.shape[0])], dtype=np.float64)
+    return eigenvector, norm_table
 
-    # DONE
+
+def get_norm_eigenvector(eigenvector: np.ndarray):
+    return np.array([item / sum(eigenvector) for item in eigenvector], dtype=np.float64)
+
+
+def get_max_eigenvalue(eigenvector: np.ndarray, norm_table: np.ndarray[[]]):
+    return np.sum([np.sum(norm_table[:, column]) * eigenvector[column]
+                   for column in range(norm_table.shape[1])])
+
+
+def check_consistency(table_expert: np.ndarray[[]]):
+    eigenvector, norm_table = get_eigenvector(table_expert)
+    norm_eigenvector = get_norm_eigenvector(eigenvector)
+    print(norm_eigenvector)
+    max_eigenvalue = get_max_eigenvalue(norm_eigenvector, norm_table)
+    print(max_eigenvalue)
+    amount = norm_table.shape[0]
+    consistency_index = (max_eigenvalue - amount) / (amount - 1)
+    print(consistency_index)
+    random_matrix_consistency = [0.00000001, 0.00000001, 0.58, 0.9, 1.12, 1.24, 1.32, 1.41, 1.45, 1.49]
+    print(random_matrix_consistency[amount - 1])
+    consistency_relation = consistency_index / random_matrix_consistency[amount - 1]
+    print(consistency_relation)
+    return consistency_relation
+
+
 # endregion
 
 
@@ -81,6 +105,8 @@ def switch_expert(sender, app_data, expert_data):
 def check_mark(sender, checked_mark, reflected_mark):
     if checked_mark == dpg.get_value(f'mark{reflected_mark[0]}{reflected_mark[1]}{reflected_mark[2]}'):
         dpg.set_value(f'mark{reflected_mark[0]}{reflected_mark[1]}{reflected_mark[2]}', not checked_mark)
+
+
 # endregion
 
 
