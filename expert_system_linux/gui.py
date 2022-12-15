@@ -32,6 +32,24 @@ with dpg.window(label="Main", tag="Main", width=WIDTH, height=HEIGHT):
                           width=200, callback=add_alternative)
     dpg.add_child_window(tag='alternatives_window', height=558)
 dpg.set_primary_window("Main", True)
+
+
+# endregion
+
+
+# region ####################################################--CONSISTENCY--##################################################
+def check_consistency(table_expert: np.ndarray[[]]):
+    # Вычисление собственного вектора (придлиженный метод - геометрическое среднее)
+    eigenvector = np.empty(table_expert.shape[0])
+    table_expert[0] = np.arange(table_expert.shape[1])  # test
+    print(table_expert[0])  # test
+    for row in range(table_expert.shape[0]):
+        print(table_expert[row])
+        print(np.prod(table_expert[row]))
+        eigenvector[row] = np.sqrt(np.prod(table_expert[row]))
+        print(eigenvector)
+
+    # DONE
 # endregion
 
 
@@ -44,14 +62,20 @@ def go_back(sender, app_data, expert):
 def switch_expert(sender, app_data, expert_data):
     # expert_data = [number_of_expert, count_of_alternatives, count_of_experts]
     global estimates
-    estimates[expert_data[0]] = [[dpg.get_value(f'mark{expert_data[0]}{i}{j}')
-                                  for j in range(expert_data[1])]
-                                 for i in range(expert_data[1])]
-    dpg.configure_item(f'evaluation{expert_data[0]}', show=False)
-    if expert_data[0] + 1 != expert_data[2]:
-        dpg.configure_item(f'evaluation{expert_data[0] + 1}', show=True)
+    dpg.delete_item('error_expert')
+    expert, count_of_alternatives, count_of_experts = expert_data
+    estimates[expert] = [[dpg.get_value(f'mark{expert}{i}{j}')
+                          for j in range(count_of_alternatives)]
+                         for i in range(count_of_alternatives)]
+    if check_consistency(estimates[expert]):
+        dpg.configure_item(f'evaluation{expert}', show=False)
+        if expert + 1 != count_of_experts:
+            dpg.configure_item(f'evaluation{expert + 1}', show=True)
+        else:
+            preparation_for_ranking([count_of_experts, count_of_alternatives])
     else:
-        preparation_for_ranking([expert_data[2], expert_data[1]])
+        dpg.add_text(default_value='Матрица не согласована. Проверьте данные.',
+                     parent=f'evaluation{expert}', tag='error_expert', color='red')
 
 
 def check_mark(sender, checked_mark, reflected_mark):
@@ -61,16 +85,14 @@ def check_mark(sender, checked_mark, reflected_mark):
 
 
 # region ###################################################--Expert Window--####################################################
-with dpg.window(label="Expert", tag="expert_window", show=False, width=WIDTH, height=HEIGHT-150,
+with dpg.window(label="Expert", tag="expert_window", show=False, width=WIDTH, height=HEIGHT - 150,
                 no_move=True, no_resize=True, no_scrollbar=True):
     with dpg.group(horizontal=True):
         dpg.add_text(default_value="ЦЕЛЬ: ", tag='label_target')
         dpg.add_input_text(tag='output_target', readonly=True, width=1220)
+
+
 # endregion
-
-
-def coefficient_variation():
-    pass
 
 
 # region ###################################################--ranging--##########################################################
@@ -135,6 +157,8 @@ def preparation_for_ranking(count_experts_alters):
             dpg.add_text(default_value="Наилучшая альтернатива: ")
             dpg.add_input_text(default_value=dpg.get_value(f'alter_text{np.argmin(calc_marks)}'),
                                readonly=True, multiline=True)
+
+
 # endregion
 
 
@@ -198,6 +222,8 @@ def experts():
             add_expert(expert, count_alternatives, count_experts)
     dpg.configure_item('evaluation0', show=True)
     dpg.configure_item('expert_window', show=True)
+
+
 # endregion
 
 
