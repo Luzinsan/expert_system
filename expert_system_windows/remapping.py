@@ -18,5 +18,4 @@ with dpg.font_registry():
             dpg.add_char_remap(i1, biglet)  # Remap the big cyrillic letter
             dpg.add_char_remap(i1 + alph_len, biglet + alph_len)  # Remap the small cyrillic letter
             biglet += 1  # choose next letter
-
 dpg.bind_font(default_font)
