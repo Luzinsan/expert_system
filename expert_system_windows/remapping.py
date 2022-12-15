@@ -10,7 +10,7 @@ alph_len = big_let_end - big_let_start + 1  # adds the shift from big letters to
 alph_shift = remap_big_let - big_let_start  # adds the shift from remapped to non-remapped
 
 with dpg.font_registry():
-    with dpg.font("C:/Windows/Fonts/SitkaVF-Italic.ttf", 17) as default_font:
+    with dpg.font("C:/Windows/Fonts/calibri.ttf", 17) as default_font:
         dpg.add_font_range_hint(dpg.mvFontRangeHint_Default)
         dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
         biglet = remap_big_let  # Starting number for remapped cyrillic alphabet
