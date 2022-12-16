@@ -2,7 +2,7 @@ import dearpygui.dearpygui as dpg
 import numpy as np
 
 
-count_alter = 0
+count_alter = 2
 WIDTH = 1920
 HEIGHT = 1080
 
