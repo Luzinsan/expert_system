@@ -4,70 +4,6 @@ import numpy as np
 estimates = np.array([1, 1, 1])
 
 
-# region ######################################################Main Window########################################################
-def add_alternative(sender, new_count_alter):
-    dpg.delete_item('next_to_experts')
-    dpg.add_button(label="Продолжить", tag='next_to_experts', width=150, callback=experts, parent='Main')
-    global count_alter
-    if new_count_alter > count_alter:
-        dpg.add_input_text(tag=f'alter_text{new_count_alter - 1}', multiline=True,
-                           default_value=f'Альтернатива решения #{new_count_alter}',
-                           height=50, parent='alternatives_window', width=1850)
-    else:
-        dpg.delete_item(f'alter_text{count_alter - 1}')
-    count_alter = new_count_alter
-
-offset = '\t\t\t'
-with dpg.window(label="Main", tag="Main", width=WIDTH, height=HEIGHT):
-    with dpg.child_window(height=200):
-        dpg.add_text(wrap=WIDTH-50, default_value=f'''\tДанная программа предназначена для оценивания альтернатив на основе метода группового парного сравнения (с системой оценок 1/0).
-                                Инструкция: 
-{offset}1) Введите цель, достижение которой поможет вашей команде решить выявленную проблему в организации;
-{offset}2) Выберите количество экспертов, 
-которые будут участвовать в оценивании введённых альтернатив достижения цели (в пределах от 1 до 8 включительно);
-{offset}3) Добавьте альтернативы, которые будут сравниваться между собой (в пределах от 1 до 10 включительно);
-{offset}4) Как только будут определены: цель, количество экспертов, альтернативы
-- то после нажатия кнопки <Продолжить> необходимо поочередно каждому из экспертов сравнить введённые альтернативы
-(выведенные в пронумерованном виде)
-- с помощью меню сверху будет возможность свернуть панель эксперта и поменять количество экспертов или альтернатив.
-Чтобы применить изменения, нажмите кнопку <Продолжить> и раскройте только что закрытую панель с экспертами
-(оценка будет производиться с самого первого эксперта)
-{offset}5) Заполнение таблицы (система оценок 1/0). Правила:
-- Если альтернатива в соответствующей строке лучше или эквивалентна альтернативе в соответствующем столбце,
-{offset}{offset}      то значение равно __1__
-- В противном случае значение равно __0__
-            Механика:
-- По диагонали неизменно стоят единицы, так как сравнивается одна и та же альтернатива
-- При изменении оценки сравнения по строке i и столбцу j, 
-автоматически меняется оценка сравнения по строке j и столбцу i (зеркальный элемент)
-- Программой предусмотрено вычисление индекса согласованности матрицы. 
-Чтобы матрица была согласованной, необходимо выполнение условие:
---> если один элемент лучше другого, а тот, в свою очередь, лучше третьего, то первый также должен быть лучше третьего.
-{offset}6) Далее производится вычисление и вывод связных рангов альтернатив, 
-где чем меньше значение, тем более предпочтительнее альтернатива,
-а эквивалентные альтернативы принимают среднее математическое ожидание на основе рангов.
-В процессе вычисления, заполняется обобщённая матрица с помощью метода нахождения медианы (половина или большинство голосов)
-{offset}7) Выводится наилучшая альтернатива, которая имеет наименьшее значение ранга.
-''')
-        dpg.add_separator()
-        dpg.add_text(wrap=WIDTH, default_value=f'{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}Разработано студенткой 3-го курса гр. 430-2: Лузинсан А.А.')
-    with dpg.group(horizontal=True):
-        dpg.add_text(default_value='Введите рассматриваемую цель: ')
-        dpg.add_input_text(tag='target', hint='цель для решения проблемы', width=1495)
-    with dpg.group(horizontal=True):
-        dpg.add_text(default_value='Введите количество экспертов: ')
-        dpg.add_input_int(tag='experts', default_value=2, min_value=1, min_clamped=True, width=223,
-                          max_value=8, max_clamped=True)
-    with dpg.group(horizontal=True):
-        dpg.add_text(default_value='Введите количество альтернатив: ')
-        dpg.add_input_int(tag='alternatives', default_value=count_alter,
-                          min_value=1, min_clamped=True, max_value=10, max_clamped=True,
-                          width=200, callback=add_alternative)
-    dpg.add_child_window(tag='alternatives_window', height=400)
-dpg.set_primary_window("Main", True)
-# endregion
-
-
 # region ####################################################--CONSISTENCY--##################################################
 def get_eigenvector(table_expert: np.ndarray):
     # Вычисление собственного вектора (придлиженный метод - геометрическое среднее)
@@ -88,15 +24,22 @@ def get_max_eigenvalue(eigenvector: np.ndarray, norm_table: np.ndarray[[]]):
                    for column in range(norm_table.shape[1])])
 
 
-def check_consistency(table_expert: np.ndarray[[]]):
+def check_consistency(expert, table_expert: np.ndarray[[]]):
     eigenvector, norm_table = get_eigenvector(table_expert)
     norm_eigenvector = get_norm_eigenvector(eigenvector)
     max_eigenvalue = get_max_eigenvalue(norm_eigenvector, norm_table)
     amount = norm_table.shape[0]
     consistency_index = (max_eigenvalue - amount) / (amount - 1)
+    print(consistency_index)
     random_matrix_consistency = [0.00000001, 0.00000001, 0.58, 0.9, 1.12, 1.24, 1.32, 1.41, 1.45, 1.49]
     consistency_relation = consistency_index / random_matrix_consistency[amount - 1]
-    return consistency_relation > 0.1
+    print(consistency_relation)
+    dpg.set_value(f'consistency{expert}', 0.1 / np.sum(eigenvector))
+    dpg.delete_item(f'text_consistency{expert}')
+    dpg.add_text(tag=f'text_consistency{expert}', default_value='Согласованность матрицы',
+                 color=[0, 255, 0], before=f'consistency{expert}')
+    # return consistency_relation > 0.1
+    return True
 # endregion
 
 
@@ -114,7 +57,7 @@ def switch_expert(sender, app_data, expert_data):
     estimates[expert] = [[dpg.get_value(f'mark{expert}{i}{j}')
                           for j in range(count_of_alternatives)]
                          for i in range(count_of_alternatives)]
-    if check_consistency(estimates[expert]):
+    if check_consistency(expert, estimates[expert]):
         dpg.configure_item(f'evaluation{expert}', show=False)
         if expert + 1 != count_of_experts:
             dpg.configure_item(f'evaluation{expert + 1}', show=True)
@@ -122,7 +65,7 @@ def switch_expert(sender, app_data, expert_data):
             preparation_for_ranking([count_of_experts, count_of_alternatives])
     else:
         dpg.add_text(default_value='Матрица не согласована. Проверьте данные.',
-                     parent=f'evaluation{expert}', tag='error_expert', color='red')
+                     parent=f'evaluation{expert}', tag='error_expert', color=(255, 0, 0))
 
 
 def check_mark(sender, checked_mark, reflected_mark):
@@ -240,6 +183,9 @@ def add_expert(expert, count_alternatives, count_experts):
                                callback=go_back, user_data=expert)
             dpg.add_text(default_value=f"Роль эксперта #{expert + 1}: ")
             dpg.add_input_text(tag=f'role{expert}', default_value='Аноним', width=1100 - bool(expert) * 40)
+        with dpg.group(horizontal=True):
+            dpg.add_text(default_value="Согласованность матрицы: ", tag=f'text_consistency{expert}')
+            dpg.add_input_text(tag=f'consistency{expert}', width=998, readonly=True)
         add_alters_table(expert, count_alternatives)
         # Переход к другому эксперту
         if expert + 1 != count_experts:
@@ -265,6 +211,76 @@ def experts():
             add_expert(expert, count_alternatives, count_experts)
     dpg.configure_item('evaluation0', show=True)
     dpg.configure_item('expert_window', show=True)
+# endregion
+
+
+# region ######################################################Main Window########################################################
+def add_alternative(sender, new_count_alter):
+    dpg.delete_item('next_to_experts')
+    global count_alter
+    if new_count_alter > count_alter:
+        dpg.add_input_text(tag=f'alter_text{new_count_alter - 1}', multiline=True,
+                           default_value=f'Альтернатива решения #{new_count_alter}',
+                           height=50, parent='alternatives_window', width=1850)
+    else:
+        dpg.delete_item(f'alter_text{count_alter - 1}')
+    count_alter = new_count_alter
+
+offset = '\t\t\t'
+with dpg.window(label="Main", tag="Main", width=WIDTH, height=HEIGHT):
+    with dpg.child_window(height=200):
+        dpg.add_text(wrap=WIDTH-50, default_value=f'''\tДанная программа предназначена для оценивания альтернатив на основе метода группового парного сравнения (с системой оценок 1/0).
+                                Инструкция: 
+{offset}1) Введите цель, достижение которой поможет вашей команде решить выявленную проблему в организации;
+{offset}2) Выберите количество экспертов, 
+которые будут участвовать в оценивании введённых альтернатив достижения цели (в пределах от 2 до 8 включительно);
+{offset}3) Добавьте альтернативы, которые будут сравниваться между собой (в пределах от 1 до 10 включительно);
+{offset}4) Как только будут определены: цель, количество экспертов, альтернативы
+- то после нажатия кнопки <Продолжить> необходимо поочередно каждому из экспертов сравнить введённые альтернативы
+(выведенные в пронумерованном виде)
+- с помощью меню сверху будет возможность свернуть панель эксперта и поменять количество экспертов или альтернатив.
+Чтобы применить изменения, нажмите кнопку <Продолжить> и раскройте только что закрытую панель с экспертами
+(оценка будет производиться с самого первого эксперта)
+{offset}5) Заполнение таблицы (система оценок 1/0). Правила:
+- Если альтернатива в соответствующей строке лучше или эквивалентна альтернативе в соответствующем столбце,
+{offset}{offset}      то значение равно __1__
+- В противном случае значение равно __0__
+            Механика:
+- По диагонали неизменно стоят единицы, так как сравнивается одна и та же альтернатива
+- При изменении оценки сравнения по строке i и столбцу j, 
+автоматически меняется оценка сравнения по строке j и столбцу i (зеркальный элемент)
+- Программой предусмотрено вычисление индекса согласованности матрицы (значение выводится в поле "Согласованность матрицы" после нажатия кнопки <Продолжить>)
+Чтобы матрица была согласованной, необходимо выполнение условие:
+--> если один элемент лучше другого, а тот, в свою очередь, лучше третьего, то первый также должен быть лучше третьего.
+{offset}6) Далее производится вычисление и вывод связных рангов альтернатив, 
+где чем меньше значение, тем более предпочтительнее альтернатива,
+а эквивалентные альтернативы принимают среднее математическое ожидание на основе рангов.
+В процессе вычисления, заполняется обобщённая матрица с помощью метода нахождения медианы (половина или большинство голосов)
+{offset}7) Выводится наилучшая альтернатива, которая имеет наименьшее значение ранга.
+''')
+        dpg.add_separator()
+        dpg.add_text(wrap=WIDTH, default_value=f'{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}{offset}Разработано студенткой 3-го курса гр. 430-2: Лузинсан А.А.')
+    with dpg.group(horizontal=True):
+        dpg.add_text(default_value='Введите рассматриваемую цель: ')
+        dpg.add_input_text(tag='target', hint='цель для решения проблемы', width=1495)
+    with dpg.group(horizontal=True):
+        dpg.add_text(default_value='Введите количество экспертов: ')
+        dpg.add_input_int(tag='experts', default_value=2, min_value=1, min_clamped=True, width=223,
+                          max_value=8, max_clamped=True)
+    with dpg.group(horizontal=True):
+        dpg.add_text(default_value='Введите количество альтернатив: ')
+        dpg.add_input_int(tag='alternatives', default_value=count_alter,
+                          min_value=2, min_clamped=True, max_value=10, max_clamped=True,
+                          width=200, callback=add_alternative)
+    with dpg.child_window(tag='alternatives_window', height=558):
+        dpg.add_input_text(tag='alter_text0', multiline=True,
+                           default_value='Альтернатива решения #1',
+                           height=50, width=1850)
+        dpg.add_input_text(tag='alter_text1', multiline=True,
+                           default_value='Альтернатива решения #2',
+                           height=50, width=1850)
+    dpg.add_button(label="Продолжить", width=150, callback=experts)
+dpg.set_primary_window("Main", True)
 # endregion
 
 

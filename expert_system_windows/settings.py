@@ -1,6 +1,6 @@
 from remapping import *
 
-count_alter = 0
+count_alter = 2
 WIDTH = 1550
 HEIGHT = 820
 
