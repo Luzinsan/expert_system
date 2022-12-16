@@ -23,7 +23,11 @@ def get_max_eigenvalue(eigenvector: np.ndarray, norm_table: np.ndarray[[]]):
                    for column in range(norm_table.shape[1])])
 
 
-def check_consistency(table_expert: np.ndarray[[]]):
+with dpg.colormap_registry(tag='consistency'):
+    dpg.add_colormap(0.5, qualitative=True)
+
+
+def check_consistency(expert, table_expert: np.ndarray[[]]):
     eigenvector, norm_table = get_eigenvector(table_expert)
     norm_eigenvector = get_norm_eigenvector(eigenvector)
     max_eigenvalue = get_max_eigenvalue(norm_eigenvector, norm_table)
@@ -33,6 +37,10 @@ def check_consistency(table_expert: np.ndarray[[]]):
     random_matrix_consistency = [0.00000001, 0.00000001, 0.58, 0.9, 1.12, 1.24, 1.32, 1.41, 1.45, 1.49]
     consistency_relation = consistency_index / random_matrix_consistency[amount - 1]
     print(consistency_relation)
+    dpg.set_value(f'consistency{expert}', 0.1 / np.sum(eigenvector))
+    dpg.delete_item(f'text_consistency{expert}')
+    dpg.add_text(tag=f'text_consistency{expert}', default_value='Согласованность матрицы',
+                 color=[0, 255, 0], before=f'consistency{expert}')
     # return consistency_relation > 0.1
     return True
 # endregion
@@ -52,7 +60,7 @@ def switch_expert(sender, app_data, expert_data):
     estimates[expert] = [[dpg.get_value(f'mark{expert}{i}{j}')
                           for j in range(count_of_alternatives)]
                          for i in range(count_of_alternatives)]
-    if check_consistency(estimates[expert]):
+    if check_consistency(expert, estimates[expert]):
         dpg.configure_item(f'evaluation{expert}', show=False)
         if expert + 1 != count_of_experts:
             dpg.configure_item(f'evaluation{expert + 1}', show=True)
@@ -180,6 +188,9 @@ def add_expert(expert, count_alternatives, count_experts):
                                callback=go_back, user_data=expert)
             dpg.add_text(default_value=f"Роль эксперта #{expert + 1}: ")
             dpg.add_input_text(tag=f'role{expert}', default_value='Аноним', width=1100 - bool(expert) * 40)
+        with dpg.group(horizontal=True):
+            dpg.add_text(default_value="Согласованность матрицы: ", tag=f'text_consistency{expert}')
+            dpg.add_input_text(tag=f'consistency{expert}', width=998, readonly=True)
         add_alters_table(expert, count_alternatives)
         # Переход к другому эксперту
         if expert + 1 != count_experts:
