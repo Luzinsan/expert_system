@@ -9,8 +9,7 @@ def get_eigenvector(table_expert: np.ndarray):
     norm_table = np.array([[0.5 if item == 0 else 2
                             for item in table_expert[row]]
                            for row in range(table_expert.shape[0])], dtype=np.float64)
-    norm_table = np.array([[1.0, 0.33, 0.33, 0.2], [3.00, 1.0, 3.00, 0.33], [3.0, 0.33, 1.0, 0.33], [5.0, 3.0, 3.0, 1.0]])
-    eigenvector = np.array([pow(np.prod(norm_table[row]), 1/norm_table.shape[0])
+    eigenvector = np.array([ pow(np.prod(norm_table[row]), 1/norm_table.shape[0])
                             for row in range(norm_table.shape[0])], dtype=np.float64)
     return eigenvector, norm_table
 
@@ -30,9 +29,12 @@ def check_consistency(table_expert: np.ndarray[[]]):
     max_eigenvalue = get_max_eigenvalue(norm_eigenvector, norm_table)
     amount = norm_table.shape[0]
     consistency_index = (max_eigenvalue - amount) / (amount - 1)
+    print(consistency_index)
     random_matrix_consistency = [0.00000001, 0.00000001, 0.58, 0.9, 1.12, 1.24, 1.32, 1.41, 1.45, 1.49]
     consistency_relation = consistency_index / random_matrix_consistency[amount - 1]
-    return consistency_relation
+    print(consistency_relation)
+    # return consistency_relation > 0.1
+    return True
 # endregion
 
 
